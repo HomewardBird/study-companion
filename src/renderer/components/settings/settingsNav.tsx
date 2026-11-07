@@ -7,6 +7,7 @@ import {
   IconListDetails,
   IconMessages,
   IconPalette,
+  IconWorldWww,
   type IconProps,
 } from '@tabler/icons-react'
 import type { ElementType } from 'react'
@@ -63,7 +64,10 @@ export function getSettingsNavGroups(): SettingsNavGroup[] {
     },
     {
       title: 'Chat',
-      items: [{ key: 'chat', label: 'Chat', icon: IconMessages, testId: TestId.settings.navChat }],
+      items: [
+        { key: 'chat', label: 'Chat', icon: IconMessages, testId: TestId.settings.navChat },
+        { key: 'web-search', label: '联网搜索', icon: IconWorldWww },
+      ],
     },
     {
       title: 'App',
@@ -108,6 +112,8 @@ export const SETTINGS_SEARCH_ENTRIES: SettingsSearchEntry[] = [
   { page: 'chat', id: 'message-layout', label: 'Message layout' },
   { page: 'chat', id: 'markdown', label: 'Markdown Rendering' },
   { page: 'chat', id: 'latex', label: 'LaTeX Rendering' },
+  { page: 'web-search', id: 'search-provider', label: 'Search Provider' },
+  { page: 'web-search', id: 'tavily-api-key', label: 'Tavily API Key' },
   { page: 'appearance', id: 'theme', label: 'Theme' },
   { page: 'appearance', id: 'language', label: 'Language' },
   { page: 'appearance', id: 'theme-color', label: 'Theme color' },

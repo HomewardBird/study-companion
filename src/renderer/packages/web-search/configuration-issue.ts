@@ -17,11 +17,9 @@ export type WebSearchConfigurationIssue =
 
 export function getWebSearchConfigurationIssue(
   configuration: WebSearchConfiguration,
-  licenseKey?: string
+  _licenseKey?: string
 ): WebSearchConfigurationIssue | null {
   switch (configuration.provider) {
-    case 'build-in':
-      return licenseKey ? null : 'chatbox-ai-sign-in'
     case 'tavily':
       return configuration.tavilyApiKey ? null : 'tavily-api-key'
     case 'bocha':

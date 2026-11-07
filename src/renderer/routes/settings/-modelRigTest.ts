@@ -139,9 +139,6 @@ async function testParserSlot(deps: ModelRigTestDeps): Promise<SlotTestResult> {
 
 async function testSearchSlot(deps: ModelRigTestDeps): Promise<SlotTestResult> {
   const provider = searchProvider(deps.settings)
-  if (provider === 'build-in' && !deps.hasLicense) {
-    return fail('Chatbox AI is not activated', 'Activate Chatbox AI, or pick another search provider.')
-  }
   if (provider === 'tavily' && !deps.settings.extension?.webSearch?.tavilyApiKey) {
     return fail('Tavily API key is missing', 'Add a Tavily API key in Web Search settings.')
   }

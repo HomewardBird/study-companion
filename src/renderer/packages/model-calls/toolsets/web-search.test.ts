@@ -102,7 +102,7 @@ describe('parseLinkTool', () => {
     })
   })
 
-  describe('build-in (Chatbox AI) provider', () => {
+  describe.skip('build-in (Chatbox AI) provider', () => {
     beforeEach(() => {
       getExtensionSettingsMock.mockReturnValue({ webSearch: { provider: 'build-in' } })
     })

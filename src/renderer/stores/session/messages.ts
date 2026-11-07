@@ -17,7 +17,7 @@ import { extractStreamErrorMessage } from '@shared/models/utils/stream-error-mes
 import { supportsSessionGeneration } from '@shared/session/capabilities'
 import { cleanupSessionAttachments } from './attachment-cleanup'
 import { createMessage, type Message } from '@shared/types'
-import { countMessageWords } from '@shared/utils/message'
+import { countMessageWords, getMessageText } from '@shared/utils/message'
 import { normalizeErrorForSentry } from '@shared/utils/sentry_policy'
 import { createModel } from '@/adapters'
 import { rendererApplication, sessionRepository } from '@/app/renderer-application'
@@ -120,6 +120,53 @@ export async function insertMessage(sessionId: string, msg: Message) {
   // remembered exact count for a long draft being sent.
   applyMessageCounts(msg, getSessionTokenModel(session))
   return await rendererApplication.sessions.insertMessage(session.id, msg)
+}
+
+async function injectWebSearchContext(
+  sessionId: string,
+  userMessage: Message,
+  webBrowsing: boolean,
+  settings: Awaited<ReturnType<typeof getSessionSettings>>
+) {
+  if (!webBrowsing) {
+    return
+  }
+  const query = getMessageText(userMessage, false, false).trim()
+  if (!query) {
+    return
+  }
+
+  let supportsToolUse = false
+  try {
+    const model = await createModel(settings)
+    supportsToolUse = model.isSupportToolUse('web-browsing')
+  } catch {
+    supportsToolUse = false
+  }
+  if (supportsToolUse) {
+    return
+  }
+
+  try {
+    const [{ webSearchExecutor }, { formatNativeWebSearchContext }] = await Promise.all([
+      import('@/packages/web-search'),
+      import('@shared/services/native-web-search'),
+    ])
+    const { searchResults } = await webSearchExecutor({ query }, {})
+    const context = formatNativeWebSearchContext(query, searchResults)
+    if (!context) {
+      return
+    }
+    const note = [
+      context,
+      '',
+      `搜索时间：${new Date().toLocaleString('zh-CN')}`,
+      '请优先依据以上搜索结果回答，并在相关句末附上来源链接；如果结果不足、过时或与问题无关，请明确说明“未核实”，不要编造来源。',
+    ].join('\n')
+    await insertMessage(sessionId, createMessage('system', note))
+  } catch (error) {
+    console.warn('Web search context injection failed:', error)
+  }
 }
 
 /**
@@ -365,6 +412,9 @@ export async function submitNewUserMessageUnlocked(
     params.onUserMessageReady?.()
     await insertMessage(sessionId, newUserMsg)
     newUserMsg = await attachLargeFileRagMetadata(sessionId, newUserMsg)
+    if (needGenerating) {
+      await injectWebSearchContext(sessionId, newUserMsg, webBrowsing, settings)
+    }
   }
 
   const globalSettings = settingsStore.getState().getSettings()

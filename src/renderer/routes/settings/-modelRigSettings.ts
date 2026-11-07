@@ -77,7 +77,7 @@ export function isSlotPresetOn(
     case 'parser':
       return effectiveParserType(settings, parserDefault) === 'chatbox-ai'
     case 'search':
-      return (settings.extension?.webSearch?.provider ?? 'build-in') === 'build-in'
+      return false
     case 'image':
       return !picture || isChatboxProvider(picture.provider)
     case 'asr':
@@ -117,7 +117,7 @@ export function settingsPatchForModelSlot(slotId: ModelSlotId, selection: ModelR
 }
 
 export function searchProvider(settings: Settings): WebSearchProviderValue {
-  return (settings.extension?.webSearch?.provider ?? 'build-in') as WebSearchProviderValue
+  return (settings.extension?.webSearch?.provider ?? 'tavily') as WebSearchProviderValue
 }
 
 export function applyAllPresetsSettings(): Pick<
@@ -148,7 +148,7 @@ export function applyAllPresetsExtension(settings: Settings): Settings['extensio
     },
     webSearch: {
       ...settings.extension.webSearch,
-      provider: 'build-in',
+      provider: 'tavily',
     },
   }
 }

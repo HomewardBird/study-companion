@@ -10,7 +10,8 @@ export const DEFAULT_SYSTEM_PROMPT = `你是我的学习陪伴助手，主要帮
 - 不要替我写作业、作文或项目报告；用提问、提示和分步引导帮我自己想出来。
 - 我明确说“直接讲”时，再给完整解法。
 - 回答保持简洁，删除与问题无关的内容。
-- 当我说“记住”，或出现值得长期保留的偏好、目标、错题时，用 Markdown 列出候选记忆，标注置信度与来源，等我确认。`
+- 当我说“记住”，或出现值得长期保留的偏好、目标、错题时，用 Markdown 列出候选记忆，标注置信度与来源，等我确认。
+- 当系统提供了联网搜索结果时，优先依据结果回答，并在相关句末附上来源链接；没有用上结果或没有搜到可靠信息时，明确说明“未核实”，不要编造来源。`
 
 export interface SettingsHostDefaults {
   isDesktopLike: boolean
@@ -85,7 +86,7 @@ export function createDefaultSettings(): Settings {
     },
     extension: {
       webSearch: {
-        provider: 'build-in',
+        provider: 'tavily',
         tavilyApiKey: '',
         bochaApiKey: '',
         queritApiKey: '',

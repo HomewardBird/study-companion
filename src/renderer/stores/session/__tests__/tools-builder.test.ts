@@ -37,7 +37,7 @@ const {
   },
   getSettingsMock: vi.fn(),
   isProMock: vi.fn(),
-  webSearchProvider: { current: 'build-in' },
+  webSearchProvider: { current: 'tavily' },
   buildCodeExecutionToolsMock: vi.fn(),
   buildRunCommandToolMock: vi.fn(),
   getSessionAttachmentRagToolSetMock: vi.fn(),
@@ -287,7 +287,7 @@ beforeEach(async () => {
   settingsState.licensePlanName = undefined
   settingsState.licenseActivationMethod = undefined
   settingsState.hasExpiredLicense = false
-  webSearchProvider.current = 'build-in'
+  webSearchProvider.current = 'tavily'
   platformName.current = 'darwin'
   isProMock.mockReturnValue(true)
   buildCodeExecutionToolsMock.mockReturnValue({

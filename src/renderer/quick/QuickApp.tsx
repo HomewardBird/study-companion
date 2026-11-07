@@ -1,16 +1,22 @@
-import { IconArrowsMaximize, IconArrowUp, IconMinus, IconSettings } from '@tabler/icons-react'
-import { createMessage, type Message } from '@shared/types'
+import { IconArrowsMaximize, IconArrowUp, IconMinus, IconSettings, IconWorldWww } from '@tabler/icons-react'
+import { createMessage, type Message, type MessageToolCallPart } from '@shared/types'
 import { useEffect, useRef, useState } from 'react'
 import { rendererApplication } from '@/app/renderer-application'
 import Markdown from '@/components/Markdown'
 import { useSessionTranscript } from '@/hooks/useSessionPresentation'
+import { getWebSearchConfigurationIssue } from '@/packages/web-search/configuration-issue'
 import { lastUsedModelStore, useLastUsedModelStore } from '@/stores/lastUsedModelStore'
 import { submitNewUserMessage } from '@/stores/session/messages'
 import { useSessionActivity } from '@/stores/sessionActivityStore'
 import { settingsStore, useSettingsStore } from '@/stores/settingsStore'
+import { uiStore } from '@/stores/uiStore'
 import { getMessageText } from '@/utils/message'
 
 const QUICK_SESSION_KEY = 'study-quick-session-id'
+const QUICK_WEB_KEY = 'study-quick-web-enabled'
+const SEARCH_CONTEXT_ENTRY = /\n(\d+)\.\s+(.+)\n(https?:\/\/\S+)\n([^\n]*)/g
+
+type QuickSource = { title: string; url: string }
 let quickSessionPromise: Promise<string> | null = null
 
 function getDefaultModel() {
@@ -30,6 +36,66 @@ function storeQuickSessionId(sessionId: string) {
   } catch {
     // localStorage can be unavailable in restricted environments.
   }
+}
+
+function collectSources(messages: Message[]): QuickSource[] {
+  let lastUserIndex = -1
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    if (messages[index].role === 'user') {
+      lastUserIndex = index
+      break
+    }
+  }
+  const relevant = lastUserIndex >= 0 ? messages.slice(lastUserIndex) : messages
+
+  const sources: QuickSource[] = []
+  const seen = new Set<string>()
+  const addSource = (title: string, url: string) => {
+    const trimmedUrl = url.trim()
+    if (!/^https?:\/\//i.test(trimmedUrl) || seen.has(trimmedUrl)) {
+      return
+    }
+    seen.add(trimmedUrl)
+    sources.push({ title: title.trim() || trimmedUrl, url: trimmedUrl })
+  }
+
+  for (const message of relevant) {
+    for (const part of message.contentParts) {
+      if (part.type === 'tool-call') {
+        const toolPart = part as MessageToolCallPart
+        if (toolPart.toolName !== 'web_search' || toolPart.state !== 'result') {
+          continue
+        }
+        const result = toolPart.result as { searchResults?: Array<{ title?: unknown; link?: unknown }> } | undefined
+        if (!Array.isArray(result?.searchResults)) {
+          continue
+        }
+        for (const item of result.searchResults) {
+          if (typeof item.title === 'string' && typeof item.link === 'string') {
+            addSource(item.title, item.link)
+          }
+        }
+        continue
+      }
+      if (message.role !== 'system') {
+        continue
+      }
+      const text = getMessageText(message, false, false)
+      if (!text.includes('<WEB_SEARCH_RESULTS>')) {
+        continue
+      }
+      for (const block of text.split(/\n(?=\d+\.\s)/)) {
+        const lines = block.trim().split('\n')
+        const title = lines[0]?.replace(/^\d+\.\s*/, '') ?? ''
+        const url = lines.find((line) => /^https?:\/\//i.test(line.trim())) ?? ''
+        if (title && url) {
+          addSource(title, url)
+        }
+      }
+    }
+  }
+
+  return sources.slice(0, 6)
 }
 
 async function createQuickSession() {
@@ -100,6 +166,13 @@ export default function QuickApp() {
   const [input, setInput] = useState('')
   const [error, setError] = useState('')
   const [sending, setSending] = useState(false)
+  const [webEnabled, setWebEnabled] = useState(() => {
+    try {
+      return localStorage.getItem(QUICK_WEB_KEY) === '1'
+    } catch {
+      return false
+    }
+  })
   const defaultChatModel = useSettingsStore((state) => state.defaultChatModel)
   const lastUsedChat = useLastUsedModelStore((state) => state.chat)
   const modelReady = Boolean(defaultChatModel || lastUsedChat)
@@ -154,19 +227,34 @@ export default function QuickApp() {
     if (!text || sending || generating) {
       return
     }
-    setInput('')
     setError('')
     const model = getDefaultModel()
     if (!model) {
       setError('请先配置模型')
       return
     }
+    if (webEnabled) {
+      const webSearch = settingsStore.getState().getSettings().extension.webSearch
+      const issue = getWebSearchConfigurationIssue({
+        provider: webSearch.provider,
+        tavilyApiKey: webSearch.tavilyApiKey,
+        bochaApiKey: webSearch.bochaApiKey,
+        queritApiKey: webSearch.queritApiKey,
+        searxngBaseUrl: webSearch.searxngBaseUrl,
+      })
+      if (issue) {
+        setError('请先在 设置 → 联网搜索 中填写 API Key')
+        return
+      }
+    }
+    setInput('')
     setSending(true)
     try {
       const id = await ensureQuickSession()
       if (!sessionId) {
         setSessionId(id)
       }
+      uiStore.getState().setSessionWebBrowsing(id, webEnabled)
       await submitNewUserMessage(id, {
         newUserMsg: createMessage('user', text),
         needGenerating: true,
@@ -179,6 +267,21 @@ export default function QuickApp() {
     }
   }
 
+  const toggleWeb = () => {
+    setWebEnabled((previous) => {
+      const next = !previous
+      try {
+        localStorage.setItem(QUICK_WEB_KEY, next ? '1' : '0')
+      } catch {
+        // Ignore storage restrictions.
+      }
+      if (sessionId) {
+        uiStore.getState().setSessionWebBrowsing(sessionId, next)
+      }
+      return next
+    })
+  }
+
   const expand = () => {
     void window.electronAPI?.invoke('quick:expand', sessionId)
   }
@@ -188,6 +291,7 @@ export default function QuickApp() {
   }
 
   const messages = transcript.messages.filter((message) => message.role === 'user' || message.role === 'assistant')
+  const sources = collectSources(transcript.messages)
 
   return (
     <div className="quick-root">
@@ -221,7 +325,25 @@ export default function QuickApp() {
               />
             ))
           )}
-          {generating && <div className="quick-thinking">正在组织讲解…</div>}
+          {sources.length > 0 && (
+            <div className="quick-sources">
+              <div className="quick-sources-title">来源</div>
+              {sources.map((source) => (
+                <button
+                  key={source.url}
+                  type="button"
+                  className="quick-source"
+                  title={source.url}
+                  onClick={() => void window.electronAPI?.invoke('openLink', source.url)}
+                >
+                  {source.title}
+                </button>
+              ))}
+            </div>
+          )}
+          {generating && (
+            <div className="quick-thinking">{webEnabled ? '正在联网搜索并组织讲解…' : '正在组织讲解…'}</div>
+          )}
         </div>
 
         <div className="quick-composer">
@@ -233,6 +355,15 @@ export default function QuickApp() {
           )}
           {error && <div className="quick-error">{error}</div>}
           <div className="quick-input-row">
+            <button
+              type="button"
+              className={`quick-web-toggle${webEnabled ? ' is-active' : ''}`}
+              title={webEnabled ? '联网搜索已开启' : '联网搜索已关闭'}
+              aria-pressed={webEnabled}
+              onClick={toggleWeb}
+            >
+              <IconWorldWww size={16} stroke={1.8} />
+            </button>
             <textarea
               ref={inputRef}
               className="quick-input"

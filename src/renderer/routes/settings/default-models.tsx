@@ -596,7 +596,7 @@ function SlotSelector(
   if (props.slotId === 'search') {
     const options = WEB_SEARCH_PROVIDERS.map((item) => ({
       value: item.value,
-      label: item.value === 'build-in' ? t('Chatbox AI Search') : item.label,
+      label: item.label,
     }))
     return (
       <AdaptiveSelect
@@ -728,7 +728,6 @@ function autoTextForSlot(
 function displayTextForSlot(props: Parameters<typeof SlotCard>[0], autoText: string, t: (key: string) => string) {
   if (props.slotId === 'parser') return t(PARSER_OPTION_LABELS[props.parser] || props.parser)
   if (props.slotId === 'search') {
-    if (props.search === 'build-in') return t('Chatbox AI Search')
     return WEB_SEARCH_PROVIDERS.find((item) => item.value === props.search)?.label || props.search
   }
   if (props.slotId === 'image') {

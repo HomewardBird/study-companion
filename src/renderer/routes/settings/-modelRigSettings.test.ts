@@ -18,7 +18,7 @@ function settings(overrides: Partial<Settings> = {}): Settings {
   return {
     extension: {
       webSearch: {
-        provider: 'build-in',
+        provider: 'tavily',
       },
     },
     ...overrides,
@@ -80,7 +80,7 @@ describe('model rig slot settings', () => {
     expect(getSlotModelRef('fast', saved)).toBeUndefined()
   })
 
-  test('parser and search presets follow the Chatbox-built-in values', () => {
+  test('parser preset follows the platform default and search has no Chatbox preset', () => {
     expect(isSlotPresetOn('parser', settings())).toBe(false)
     expect(isSlotPresetOn('parser', settings(), undefined, 'chatbox-ai')).toBe(true)
     expect(
@@ -97,7 +97,7 @@ describe('model rig slot settings', () => {
         'chatbox-ai'
       )
     ).toBe(false)
-    expect(isSlotPresetOn('search', settings())).toBe(true)
+    expect(isSlotPresetOn('search', settings())).toBe(false)
     expect(isSlotPresetOn('search', settings({ extension: { webSearch: { provider: 'tavily' } } }))).toBe(false)
   })
 
@@ -114,7 +114,7 @@ describe('model rig slot settings', () => {
     expect(isSlotPresetOn('image', settings(), { provider: 'openai', modelId: 'gpt-image-1' })).toBe(false)
   })
 
-  test('applying Chatbox presets clears custom models and restores built-in parser and search', () => {
+  test('applying Chatbox presets clears custom models and restores the built-in parser', () => {
     const current = settings({
       defaultChatModel: { provider: 'openai', model: 'gpt-4.1' },
       extension: {
@@ -130,7 +130,7 @@ describe('model rig slot settings', () => {
       defaultEmbeddingModel: undefined,
       defaultRerankModel: undefined,
     })
-    expect(applyAllPresetsExtension(current).webSearch.provider).toBe('build-in')
+    expect(applyAllPresetsExtension(current).webSearch.provider).toBe('tavily')
     expect(applyAllPresetsExtension(current).documentParser?.type).toBe('chatbox-ai')
     expect(applyAllPresetsExtension(current).webSearch.tavilyApiKey).toBe('secret')
   })
@@ -205,7 +205,7 @@ describe('model rig slot tests', () => {
     expect(pinged).toEqual(['openai/gpt-4.1'])
   })
 
-  test('web search built-in requires a license before it searches', async () => {
+  test('web search requires a configured Tavily key before it searches', async () => {
     const result = await runSlotTest('search', {
       settings: settings(),
       configuredProviderIds: new Set(['openai']),
@@ -216,13 +216,13 @@ describe('model rig slot tests', () => {
       searchWeb: async () => undefined,
     })
     expect(result.status).toBe('fail')
-    expect(result.error).toMatch(/not activated/i)
+    expect(result.error).toMatch(/Tavily API key is missing/i)
   })
 
   test('local document parser passes without a network call', async () => {
     const result = await runSlotTest('parser', {
       settings: settings({
-        extension: { webSearch: { provider: 'build-in' }, documentParser: { type: 'local' } },
+        extension: { webSearch: { provider: 'bing' }, documentParser: { type: 'local' } },
       }),
       configuredProviderIds: new Set(),
       hasLicense: false,
