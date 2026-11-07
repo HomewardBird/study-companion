@@ -5,7 +5,7 @@ import '@mantine/spotlight/styles.css'
 import { RouterProvider } from '@tanstack/react-router'
 import { useAtomValue } from 'jotai'
 import 'photoswipe/dist/photoswipe.css'
-import { lazy, StrictMode, Suspense, useState } from 'react'
+import { lazy, StrictMode, Suspense, useEffect, useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import {
   bootstrapRenderer,
@@ -16,6 +16,7 @@ import {
 } from './app'
 import { ErrorBoundary } from './components/common/ErrorBoundary'
 import { sessionStartupRecovery } from './packages/session-startup-recovery'
+import './quick/quick.css'
 import platform from './platform'
 import reportWebVitals from './reportWebVitals'
 import { router } from './router'
@@ -26,6 +27,7 @@ import { captureRendererDevLaunchOptions } from './utils/dev-launch'
 import { CHATBOX_BUILD_TARGET } from './variables'
 
 const MobileExecutionHost = lazy(() => import('./packages/mobile-work-mode/MobileExecutionHost'))
+const QuickApp = lazy(() => import('./quick/QuickApp'))
 
 // 按需加载 polyfill
 import './setup/load_polyfill'
@@ -50,6 +52,38 @@ if (CHATBOX_BUILD_TARGET === 'mobile_app') {
 }
 
 // ==========渲染节点==============
+
+function AppSurface() {
+  const [quickMode, setQuickMode] = useState(false)
+
+  useEffect(() => {
+    return window.electronAPI?.onQuickModeChanged?.(setQuickMode)
+  }, [])
+
+  return (
+    <>
+      <div
+        style={{ height: '100%', display: quickMode ? 'none' : undefined }}
+        aria-hidden={quickMode}
+      >
+        <RouterProvider router={router} />
+      </div>
+      {quickMode && (
+        <Suspense
+          fallback={
+            <div className="quick-root">
+              <div className="quick-shell">
+                <div className="quick-loading">正在打开…</div>
+              </div>
+            </div>
+          }
+        >
+          <QuickApp />
+        </Suspense>
+      )}
+    </>
+  )
+}
 
 function InitPage() {
   const log = useAtomValue(initLogAtom)
@@ -123,7 +157,7 @@ void runRendererStartup({
                 <MobileExecutionHost />
               </Suspense>
             ) : null}
-            <RouterProvider router={router} />
+            <AppSurface />
           </ChatboxProvider>
         </ErrorBoundary>
       </StrictMode>

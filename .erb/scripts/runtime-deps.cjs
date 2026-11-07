@@ -84,6 +84,22 @@ function verifyInstalledRuntimeDeps(appDir) {
 
 exports.verifyInstalledRuntimeDeps = verifyInstalledRuntimeDeps
 
+function copyDirRecursive(sourceDir, targetDir) {
+  const stat = fs.statSync(sourceDir)
+
+  if (stat.isDirectory()) {
+    fs.mkdirSync(targetDir, { recursive: true })
+    for (const entry of fs.readdirSync(sourceDir)) {
+      if (entry.endsWith('.map')) continue
+      copyDirRecursive(path.join(sourceDir, entry), path.join(targetDir, entry))
+    }
+    return
+  }
+
+  fs.mkdirSync(path.dirname(targetDir), { recursive: true })
+  fs.copyFileSync(sourceDir, targetDir)
+}
+
 function copyPackage(sourceNodeModulesDir, targetNodeModulesDir, packageName) {
   const sourceDir = packagePath(sourceNodeModulesDir, packageName)
   const targetDir = packagePath(targetNodeModulesDir, packageName)
@@ -93,8 +109,11 @@ function copyPackage(sourceNodeModulesDir, targetNodeModulesDir, packageName) {
   }
 
   fs.rmSync(targetDir, { recursive: true, force: true })
-  fs.mkdirSync(path.dirname(targetDir), { recursive: true })
-  fs.cpSync(sourceDir, targetDir, { recursive: true, dereference: true })
+  copyDirRecursive(sourceDir, targetDir)
+
+  if (!fs.existsSync(path.join(targetDir, 'package.json'))) {
+    throw new Error(`[runtime-deps] package copy did not complete: ${packageName} -> ${targetDir}`)
+  }
 }
 
 function ensureNodeModulesDir(dir) {
@@ -137,6 +156,7 @@ function ensureUnpackedRuntimeDeps(context) {
     for (const packageName of requiredPackages) {
       copyPackage(sourceNodeModulesDir, nodeModulesDir, packageName)
     }
+    verifyNodeModulesTree(nodeModulesDir, 'copied')
     console.log(
       `[runtime-deps] copied runtime package(s) to ${nodeModulesDir}: ${requiredPackages.join(', ')}`,
     )

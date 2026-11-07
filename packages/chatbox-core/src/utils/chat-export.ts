@@ -92,77 +92,45 @@ export function renderToolCallTxt(summary: ToolCallSummary): string {
  * native mobile shell so the two stop drifting on per-part / per-message formatting.
  * HTML export stays in the renderer (`lib/format-chat.tsx`) because it needs DOM rendering.
  */
+function getExportableText(msg: Message): string {
+  if (!msg.contentParts?.length) {
+    return getMessageText(msg).trim()
+  }
+  return msg.contentParts
+    .filter((part) => part.type === 'text')
+    .map((part) => part.text.trim())
+    .filter(Boolean)
+    .join('\n\n')
+}
+
 export async function formatChatAsMarkdown(
   sessionName: string,
   threads: AsyncIterable<ExportableThread> | Iterable<ExportableThread>
 ): Promise<string> {
-  let content = `# ${sessionName}\n\n`
+  const date = new Date().toISOString().slice(0, 10)
+  let content = `---\ntype: study-notes\ntitle: ${JSON.stringify(sessionName)}\ndate: ${date}\ntags: [学习笔记]\n---\n\n`
+  content += `# ${sessionName}\n\n`
   let i = 0
   for await (const thread of threads) {
     i++
-    content += `## ${i}. ${thread.name}\n\n`
+    if (i > 1) {
+      content += `## ${thread.name}\n\n`
+    }
     for await (const msg of thread.messages) {
-      const attachments = getAttachmentNames(msg)
-      const toolCallSummaries = collectToolCallSummaries(msg)
-      const renderedToolCalls = new Set<string>()
-      const textBuffer: string[] = []
-      const flushTextBuffer = () => {
-        if (textBuffer.length === 0) {
-          return
-        }
-        const sanitized = textBuffer.join('\n').replaceAll(/```\w*/g, '')
-        content += '```\n' + sanitized + '\n```\n\n'
-        textBuffer.length = 0
+      const text = getExportableText(msg)
+      if (!text) {
+        continue
       }
-      content += `**${msg.role}**: \n\n`
-      if (msg.contentParts?.length) {
-        for (const part of msg.contentParts) {
-          if (part.type === 'tool-call') {
-            if (renderedToolCalls.has(part.toolCallId)) {
-              continue
-            }
-            const summary = toolCallSummaries.get(part.toolCallId)
-            if (!summary) {
-              continue
-            }
-            flushTextBuffer()
-            content += renderToolCallMarkdown(summary)
-            renderedToolCalls.add(part.toolCallId)
-            continue
-          }
-          if (part.type === 'text') {
-            textBuffer.push(part.text)
-            continue
-          }
-          if (part.type === 'image') {
-            textBuffer.push('[image]')
-            continue
-          }
-          if (part.type === 'info') {
-            textBuffer.push(part.text)
-          }
-        }
-        flushTextBuffer()
-      } else {
-        content += '```\n' + getMessageText(msg).replaceAll(/```\w*/g, '') + '\n```\n\n'
-      }
-      if (attachments.length > 0) {
-        content += 'Attachments:\n'
-        for (const name of attachments) {
-          content += `- ${name}\n`
-        }
-        content += '\n'
+      if (msg.role === 'user') {
+        content += `### 提问\n\n> ${text.split('\n').join('\n> ')}\n\n`
+      } else if (msg.role === 'assistant') {
+        content += `### 讲解\n\n${text}\n\n`
       }
     }
-    content += '\n\n'
   }
-  content += '--------------------\n\n'
-  content += `
-<a href="https://chatboxai.app" style="display: flex; align-items: center;">
-<img src='https://chatboxai.app/icon.png' style='width: 40px; height: 40px; padding-right: 6px'>
-<b style='font-size:30px'>Chatbox AI</b>
-</a>
-`
+  if (content.endsWith('# ' + sessionName + '\n\n')) {
+    content += '暂无学习笔记内容。\n'
+  }
   return content
 }
 
@@ -231,6 +199,5 @@ export async function formatChatAsTxt(
     content += '\n\n\n\n'
   }
   content += `========================================================================\n\n`
-  content += `Chatbox AI (https://chatboxai.app)`
   return content
 }

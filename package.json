@@ -1,13 +1,13 @@
 {
   "name": "xyz.chatboxapp.ce",
-  "productName": "xyz.chatboxapp.ce",
+  "productName": "学习伴侣",
   "version": "0.0.1",
   "engines": {
     "node": ">=22.13.0 <23.0.0",
     "pnpm": ">=10.17.0"
   },
   "private": true,
-  "description": "A desktop client for multiple cutting-edge AI models",
+  "description": "本地优先的 Windows 学习陪伴桌面应用：快捷小窗、学习模式与学习笔记导出",
   "main": "out/main/main.js",
   "scripts": {
     "generate:model-snapshot": "pnpm exec tsx scripts/generate-model-snapshot.ts",
@@ -19,6 +19,7 @@
     "delete-sourcemaps": "node scripts/delete-source-maps.mjs",
     "postinstall": "node .erb/scripts/postinstall.cjs",
     "package": "tsx ./.erb/scripts/clean.js && pnpm run build && cross-env UPDATE_CHANNEL=alpha electron-builder build --publish never",
+    "package:local": "tsx ./.erb/scripts/clean.js && pnpm run build && cross-env UPDATE_CHANNEL=alpha electron-builder build --publish never --config.directories.output=F:/Github/学习伴侣-build",
     "package:all": "tsx ./.erb/scripts/clean.js && pnpm run build && cross-env UPDATE_CHANNEL=alpha electron-builder build --publish never --win --mac --linux",
     "electron:publish-mac": "pnpm run build && electron-builder build --publish always --mac",
     "electron:publish-linux": "pnpm run build && electron-builder build --publish always --linux",

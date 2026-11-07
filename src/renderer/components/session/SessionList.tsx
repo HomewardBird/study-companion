@@ -33,7 +33,6 @@ import {
   IconLoader2,
   IconMessagePlus,
   IconPencil,
-  IconPlus,
   IconTrash,
 } from '@tabler/icons-react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
@@ -62,7 +61,6 @@ import { uiStore, useUIStore } from '@/stores/uiStore'
 import ActionMenu, { type ActionMenuItemProps } from '../ActionMenu'
 import { ICON_SIZE, IconButton } from '../common/IconButton'
 import { ScalableIcon } from '../common/ScalableIcon'
-import Broom from '../icons/Broom'
 import SessionItem from './SessionItem'
 import { useSidebarContextMenu } from './useSidebarContextMenu'
 
@@ -76,8 +74,6 @@ export interface Props {
   sessionListViewportRef: MutableRefObject<HTMLDivElement | null>
   atTopStateChange?: (atTop: boolean) => void
 }
-
-const PROJECTS_SECTION_ID = 'section:projects'
 
 type SessionListItem =
   | { type: 'section'; id: string; label: string; droppable?: boolean }
@@ -118,19 +114,13 @@ function buildDisplayItems(
   const pinned = sessionRows(0)
   const unfiledRank = folders.length + 1
   const unfiled = sessionRows(unfiledRank)
-  // The projects header is where projects are created, so it stays even with no
-  // projects or chats.
-  const projectsHeader: SessionListItem = { type: 'section', id: PROJECTS_SECTION_ID, label: labels.projects }
   if (sessions.length === 0 && folders.length === 0) {
-    return [projectsHeader]
+    return []
   }
 
   const items: SessionListItem[] = []
   if (pinned.length > 0) {
     items.push({ type: 'section', id: 'section:pinned', label: labels.pinned }, ...pinned)
-  }
-  if (loadedRank >= 1) {
-    items.push(projectsHeader)
   }
   folders.forEach((folder, index) => {
     const rank = index + 1
@@ -146,8 +136,8 @@ function buildDisplayItems(
     })
     if (!collapsed) items.push(...rows)
   })
-  if (unfiledRank <= loadedRank) {
-    items.push({ type: 'section', id: UNFILED_DROP_ID, label: labels.chats, droppable: folders.length > 0 }, ...unfiled)
+  if (unfiledRank <= loadedRank && unfiled.length > 0) {
+    items.push({ type: 'section', id: 'section:chats', label: labels.chats }, ...unfiled)
   }
   return items
 }
@@ -180,61 +170,6 @@ function SessionListSectionHeader(props: { label: string; testId?: string; child
       </Text>
       {props.children}
     </Flex>
-  )
-}
-
-function ChatsSectionMenu() {
-  const { t } = useTranslation()
-  const isSmallScreen = useIsSmallScreen()
-  const touchLayout = useTouchLayout()
-  const setShowSidebar = useUIStore((s) => s.setShowSidebar)
-  return (
-    <ActionMenu
-      position="bottom-end"
-      items={[
-        {
-          text: t('Clear Conversation List'),
-          icon: Broom,
-          testId: TestId.sidebar.clearSessionList,
-          onClick: () => {
-            if (isSmallScreen) {
-              setShowSidebar(false)
-            }
-            void NiceModal.show('clear-session-list')
-          },
-        },
-      ]}
-    >
-      <IconButton
-        icon={IconDots}
-        iconSize={ICON_SIZE.inline}
-        size={isSmallScreen ? 'md' : 'sm'}
-        color="chatbox-tertiary"
-        aria-label={t('More')}
-        data-testid={TestId.sidebar.chatsSectionMenu}
-        className={
-          touchLayout
-            ? undefined
-            : 'opacity-0 group-hover/section:opacity-100 focus-visible:opacity-100 data-[expanded=true]:opacity-100'
-        }
-      />
-    </ActionMenu>
-  )
-}
-
-function CreateProjectButton() {
-  const { t } = useTranslation()
-  const isSmallScreen = useIsSmallScreen()
-  return (
-    <IconButton
-      icon={IconPlus}
-      iconSize={ICON_SIZE.inline}
-      size={isSmallScreen ? 'md' : 'sm'}
-      color="chatbox-tertiary"
-      aria-label={t('New project')}
-      data-testid={TestId.sidebar.createProject}
-      onClick={() => void NiceModal.show('session-folder-create')}
-    />
   )
 }
 
@@ -381,9 +316,9 @@ export default function SessionList(props: Props) {
   if (isEmpty) {
     return (
       <Flex direction="column" flex={1} className="sidebar-session-list" ref={props.sessionListViewportRef}>
-        <SessionListSectionHeader label={t('Projects')} testId={TestId.sidebar.projectsSection}>
-          <CreateProjectButton />
-        </SessionListSectionHeader>
+        <Text size="xs" c="chatbox-tertiary" ta="center" py="md">
+          还没有对话
+        </Text>
       </Flex>
     )
   }
@@ -446,19 +381,7 @@ export default function SessionList(props: Props) {
             components={virtuosoComponents}
             groupContent={(index) => {
               const item = groupedItems.groups[index].header
-              const header =
-                item.id === UNFILED_DROP_ID ? (
-                  <SessionListSectionHeader label={item.label} testId={TestId.sidebar.chatsSection}>
-                    <ChatsSectionMenu />
-                  </SessionListSectionHeader>
-                ) : item.id === PROJECTS_SECTION_ID ? (
-                  <SessionListSectionHeader label={item.label} testId={TestId.sidebar.projectsSection}>
-                    <CreateProjectButton />
-                  </SessionListSectionHeader>
-                ) : (
-                  <SessionListSectionHeader label={item.label} testId={TestId.sidebar.pinnedSection} />
-                )
-              return item.droppable ? <DropTarget id={item.id}>{header}</DropTarget> : header
+              return <SessionListSectionHeader label={item.label} testId={TestId.sidebar.pinnedSection} />
             }}
             itemContent={(index) => {
               const item = groupedItems.items[index]

@@ -58,6 +58,7 @@ const electronHandler: ElectronIPC = {
     ipcRenderer.on('window-show', callback)
     return () => ipcRenderer.off('window-show', callback)
   },
+  onQuickModeChanged: createListener<[boolean]>('quick-mode-changed'),
   onUpdateDownloaded: (callback: () => void) => {
     ipcRenderer.on('update-downloaded', callback)
     return () => ipcRenderer.off('update-downloaded', callback)

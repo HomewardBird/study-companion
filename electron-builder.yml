@@ -1,31 +1,20 @@
-productName: Chatbox
-appId: xyz.chatboxapp.app
+productName: 学习伴侣
+appId: com.studycompanion.app
 # Match packages/chatbox-i18n/src/languages.ts using Windows/Linux locale filenames.
 electronLanguages:
   - en-US
   - zh-CN
-  - zh-TW
-  - ja
-  - ko
-  - ru
-  - de
-  - fr
-  - pt-PT
-  - es
-  - ar
-  - it
-  - sv
-  - nb
-  - tr
 asar: true
+compression: maximum
 asarUnpack:
   - "**/*.{node,dll}"
   - "**/node_modules/libsql/**"
 files:
   - "dist"
-  # - "!dist/**/*.map"
-  # - "!dist/**/stats.html"
+  - "!dist/**/*.map"
+  - "!dist/**/stats.html"
   - "node_modules"
+  - "!node_modules/**/*.map"
   - "!node_modules/@types"
   - "!node_modules/undici-types"
   - "package.json"
@@ -82,13 +71,8 @@ win:
     - target: nsis
       arch:
         - x64
-        - arm64
   verifyUpdateCodeSignature: false
-  artifactName: ${productName}-${version}-Setup.${ext}
-  signtoolOptions:
-    sign: ./custom_win_sign.js
-    signingHashAlgorithms:
-      - sha256
+  artifactName: ${productName}-${version}-x64-Setup.${ext}
 
 nsis:
   oneClick: false

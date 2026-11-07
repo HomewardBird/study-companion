@@ -140,6 +140,8 @@ yarn-error.log*
 next-env.d.ts
 
 tmp
+/tmp-copytest/
+/release/app/pnpm-lock.yaml
 
 # Logs
 logs

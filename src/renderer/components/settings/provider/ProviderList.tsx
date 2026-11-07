@@ -33,9 +33,7 @@ export function ProviderList({ providers, onAddProvider }: ProviderListProps) {
 
   const activatedProviderIds = useMemo(() => new Set(availableProviders.map((p) => p.id)), [availableProviders])
 
-  // Sort providers: ChatboxAI first, then activated/custom providers, then featured presets
   const sortedProviders = useMemo(() => {
-    const chatboxAI = providers.filter((p) => p.id === ModelProviderEnum.ChatboxAI)
     const activated: ProviderBaseInfo[] = []
     const featured: ProviderBaseInfo[] = []
 
@@ -49,7 +47,7 @@ export function ProviderList({ providers, onAddProvider }: ProviderListProps) {
       }
     }
 
-    return [...chatboxAI, ...activated, ...featured]
+    return [...activated, ...featured]
   }, [providers, activatedProviderIds])
 
   return (

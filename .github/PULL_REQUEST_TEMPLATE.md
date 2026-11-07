@@ -1,24 +1,20 @@
-### Description
+### 改动说明
 
-[Please provide a detailed description of your contribution, including the main changes and their purpose]
+请说明这个 PR 解决了什么问题、主要改了哪些文件，以及为什么这样改。
 
-### Additional Notes
+### 验证方式
 
-[If you have any additional comments or notes, please add them here]
+请列出你实际运行过的命令或手动验证步骤，例如：
 
-### Screenshots
+- `pnpm check`
+- `pnpm test`
+- `pnpm lint`
+- 手动验证快捷小窗 / 设置页 / 学习笔记导出
 
-[Optional: Include screenshots that help explain your PR]
+### 截图
 
-### Contributor Agreement
+如果涉及界面变化，请附上修改前后的截图。
 
-By submitting this Pull Request, I confirm that I have read and agree to the following terms:
+### 许可证
 
-- I agree to contribute all code submitted in this PR to the open-source community edition licensed under GPLv3 and the proprietary official edition without compensation.
-- I grant the official edition development team the rights to freely use, modify, and distribute this code, including for commercial purposes.
-- I confirm that this code is my original work, or I have obtained the appropriate authorization from the copyright holder to submit this code under these terms.
-- I understand that the submitted code will be publicly released under the GPLv3 license, and may also be used in the proprietary official edition.
-
-**Please check the box below to confirm:**
-
-[ ] I have read and agree with the above statement.
+提交即表示你同意本次改动以 GPL-3.0 许可证发布。

@@ -12,6 +12,7 @@ import { initGoogleAnalyticsTracking } from '@/setup/ga_init'
 import { initJkTracking } from '@/setup/jk_analytics_init'
 import { initPlausibleTracking } from '@/setup/plausible_init'
 import { initSentry } from '@/setup/sentry_init'
+import { ensureDefaultSessions } from '@/setup/init_data'
 import { initSessionAttachmentRagMaintenance } from '@/setup/session_attachment_rag_maintenance'
 import { type SessionMigrationTrickleHandle, startSessionMigrationTrickle } from '@/setup/session-migration-trickle'
 import { currentSessionIdAtom } from '@/stores/atoms/sessionAtoms'
@@ -87,6 +88,8 @@ export async function bootstrapRenderer(application: RendererApplication): Promi
     initOnboardingStore(),
     initRecentDirectoriesStore(),
   ])
+
+  await ensureDefaultSessions()
 
   void i18n.changeLanguage(settings.language)
   initLoginLicenseStateReconciliation()

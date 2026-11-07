@@ -2,7 +2,15 @@ import { getDefaultInterfaceColors } from '../../theme-colors'
 import { DEFAULT_ENABLED_BUILTIN_SKILL_NAMES } from '../../types/skills'
 import { type DocumentParserConfig, type Settings, Theme } from './settings-schema'
 
-export const DEFAULT_SYSTEM_PROMPT = 'You are a helpful assistant.'
+export const DEFAULT_SYSTEM_PROMPT = `你是我的学习陪伴助手，主要帮助我学习高中课程和计算机入门。
+
+回答要求：
+- 先用一两句话给结论，再按需要展开；解释用通俗语言，不堆术语。
+- 数学公式用 LaTeX，代码用带语言标记的代码块。
+- 不要替我写作业、作文或项目报告；用提问、提示和分步引导帮我自己想出来。
+- 我明确说“直接讲”时，再给完整解法。
+- 回答保持简洁，删除与问题无关的内容。
+- 当我说“记住”，或出现值得长期保留的偏好、目标、错题时，用 Markdown 列出候选记忆，标注置信度与来源，等我确认。`
 
 export interface SettingsHostDefaults {
   isDesktopLike: boolean
@@ -20,12 +28,12 @@ export function createDefaultSettings(): Settings {
   return {
     showWordCount: false,
     showTokenCount: false,
-    showTokenUsed: true,
-    showModelName: true,
+    showTokenUsed: false,
+    showModelName: false,
     showMessageTimestamp: false,
     showFirstTokenLatency: false,
     showAvatar: true,
-    hideSystemPromptMessage: false,
+    hideSystemPromptMessage: true,
     messageLayout: 'bubble',
     autoScrollNewMessagesToTop: false,
     userAvatarKey: '',
@@ -35,7 +43,7 @@ export function createDefaultSettings(): Settings {
     theme: Theme.System,
     interfaceColors: getDefaultInterfaceColors(),
     interfaceColorPresets: [],
-    language: 'en',
+    language: 'zh-Hans',
     fontSize: 14,
     spellCheck: true,
     defaultPrompt: DEFAULT_SYSTEM_PROMPT,
@@ -53,13 +61,13 @@ export function createDefaultSettings(): Settings {
     autoCompaction: true,
     compactionThreshold: 0.75,
     pauseOnToolCallLimit: true,
-    autoLaunch: false,
+    autoLaunch: true,
     autoUpdate: true,
     betaUpdate: false,
     defaultEmbeddingModel: undefined,
     defaultRerankModel: undefined,
     shortcuts: {
-      quickToggle: 'Alt+`',
+      quickToggle: 'Ctrl+Alt+Space',
       inputBoxFocus: 'mod+i',
       inputBoxWebBrowsingMode: 'mod+e',
       newChat: 'mod+n',

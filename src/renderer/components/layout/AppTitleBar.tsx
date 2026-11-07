@@ -1,7 +1,6 @@
 import { Box, Flex, Image, Text } from '@mantine/core'
 import { TestId } from '@shared/automation/testids'
 import { IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand } from '@tabler/icons-react'
-import { useNavigate } from '@tanstack/react-router'
 import { atom, useAtomValue, useSetAtom } from 'jotai'
 import type { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
@@ -41,7 +40,6 @@ export function useAppTitleBarHeight() {
  */
 export function AppTitleBar() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const height = useAppTitleBarHeight()
   const showSidebar = useUIStore((s) => s.showSidebar)
   const setShowSidebar = useUIStore((s) => s.setShowSidebar)
@@ -67,16 +65,10 @@ export function AppTitleBar() {
         className="flex-none box-border"
       >
         {showSidebar && (
-          <Flex
-            align="center"
-            gap="xs"
-            miw={0}
-            className="controls cursor-pointer"
-            onClick={() => navigate({ to: '/about' })}
-          >
+          <Flex align="center" gap="xs" miw={0} className="controls">
             <Image src={icon} w={18} h={18} />
             <Text span fz={14} fw={600} lh="20px" c="chatbox-primary" truncate>
-              Chatbox
+              学习伴侣
             </Text>
           </Flex>
         )}

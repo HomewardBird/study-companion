@@ -17,10 +17,10 @@ import {
   useRef,
   useState,
 } from 'react'
+import type { ChatboxAIModelList } from '@/packages/remote'
 import { useTranslation } from 'react-i18next'
 import { Drawer } from 'vaul'
 import { trackListModelClick, trackSelectModelClick, trackUpgradeModelClick } from '@/analytics/model-selection'
-import useChatboxAIModels from '@/hooks/useChatboxAIModels'
 import { useProviders } from '@/hooks/useProviders'
 import { useIsSmallScreen } from '@/hooks/useScreenChange'
 import { collapsedProvidersAtom } from '@/stores/atoms/uiAtoms'
@@ -68,11 +68,10 @@ export const ModelSelectorV2 = forwardRef<HTMLDivElement, ModelSelectorV2Props>(
     const { t } = useTranslation()
     const isMobile = useIsSmallScreen()
     const { providers, favoritedModels, favoriteModel, unfavoriteModel, isFavoritedModel } = useProviders()
-    const { chatboxAIModelList, chatboxAIModels } = useChatboxAIModels()
+    const chatboxAIModelList = undefined as ChatboxAIModelList | undefined
+    const chatboxAIModels: ChatboxAIModel[] = []
     const favoritedModelsSetting = useSettingsStore((state) => state.favoritedModels)
-    const chatboxAIExcludedModels = useSettingsStore(
-      (state) => state.providers?.[ModelProviderEnum.ChatboxAI]?.excludedModels || EMPTY_MODEL_IDS
-    )
+    const chatboxAIExcludedModels = EMPTY_MODEL_IDS
     const [collapsedProviders, setCollapsedProviders] = useAtom(collapsedProvidersAtom)
     const activeTab = useUIStore((state) => state.modelSelectorTab)
     const setActiveTab = useUIStore((state) => state.setModelSelectorTab)
@@ -355,7 +354,7 @@ export const ModelSelectorV2 = forwardRef<HTMLDivElement, ModelSelectorV2Props>(
         ? (favoritedModels || []).filter((favorite) => {
             const provider = favorite.provider
             const model = favorite.model
-            if (!provider || !model || (chatboxAIModelList && provider.id === ModelProviderEnum.ChatboxAI)) return false
+            if (!provider || !model || provider.id === ModelProviderEnum.ChatboxAI) return false
             if (!modelMatchesSearch({ modelId: model.modelId, modelName: model.nickname }, search, provider.name)) {
               return false
             }
@@ -456,7 +455,7 @@ export const ModelSelectorV2 = forwardRef<HTMLDivElement, ModelSelectorV2Props>(
             showAuto && activeTab === 'all' ? null : (
               <Stack gap="xs" py="md" px="sm" align="center">
                 <Text c="chatbox-tertiary" size="xs">
-                  {activeTab === 'favorite' ? t('No favorite models') : t('No eligible models available')}
+                  {activeTab === 'favorite' ? '还没有收藏的模型' : '尚未配置模型，请在 设置 → 模型提供方 填写 API 密钥'}
                 </Text>
               </Stack>
             )

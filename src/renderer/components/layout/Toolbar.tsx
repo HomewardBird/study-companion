@@ -137,7 +137,7 @@ export function SessionMenu({
       onClick: handleCopySessionId,
     },
     {
-      text: t('Export Chat'),
+      text: '导出学习笔记',
       icon: IconDeviceFloppy,
       testId: TestId.session.export,
       onClick: handleExportAndSave,

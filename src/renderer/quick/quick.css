@@ -1,0 +1,224 @@
+.quick-root {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  padding: 0;
+  box-sizing: border-box;
+  --quick-accent: #3f8f82;
+  background: var(--chatbox-background-primary);
+  color: var(--chatbox-tint-primary);
+  font-family: inherit;
+}
+
+html[data-theme='dark'] .quick-root {
+  --quick-accent: #63b3a3;
+}
+
+.quick-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--chatbox-border-primary);
+  border-radius: 10px;
+  background: var(--chatbox-background-primary);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 6%);
+}
+
+.quick-titlebar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  height: 38px;
+  padding: 0 8px 0 14px;
+  border-bottom: 1px solid color-mix(in srgb, var(--chatbox-border-primary), transparent 40%);
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+.quick-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--chatbox-tint-secondary);
+}
+
+.quick-title-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  -webkit-app-region: no-drag;
+}
+
+.quick-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--chatbox-tint-tertiary);
+  cursor: pointer;
+}
+
+.quick-icon-button:hover {
+  background: color-mix(in srgb, var(--chatbox-tint-primary), transparent 92%);
+  color: var(--chatbox-tint-primary);
+}
+
+.quick-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 12px;
+  color: var(--chatbox-tint-tertiary);
+}
+
+.quick-messages {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px 16px 8px;
+  scrollbar-width: thin;
+}
+
+.quick-empty {
+  padding-top: 18px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--chatbox-tint-tertiary);
+}
+
+.quick-user {
+  width: fit-content;
+  max-width: 88%;
+  margin: 0 0 12px auto;
+  padding: 7px 11px;
+  border-radius: 12px 12px 4px 12px;
+  background: color-mix(in srgb, var(--quick-accent), transparent 88%);
+  color: var(--chatbox-tint-primary);
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.quick-answer {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.quick-markdown {
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.quick-markdown > :first-child {
+  margin-top: 0;
+}
+
+.quick-markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.quick-markdown p,
+.quick-markdown ul,
+.quick-markdown ol,
+.quick-markdown pre,
+.quick-markdown blockquote {
+  margin: 0.55em 0;
+}
+
+.quick-thinking {
+  padding: 2px 0 10px;
+  font-size: 12px;
+  color: var(--chatbox-tint-tertiary);
+}
+
+.quick-composer {
+  flex: none;
+  padding: 8px 12px 12px;
+  border-top: 1px solid color-mix(in srgb, var(--chatbox-border-primary), transparent 45%);
+}
+
+.quick-setup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 7px 10px;
+  border: 1px solid color-mix(in srgb, var(--quick-accent), transparent 60%);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--quick-accent), transparent 92%);
+  color: var(--chatbox-tint-primary);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.quick-error {
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--chatbox-tint-error, #d64545);
+}
+
+.quick-input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.quick-input {
+  flex: 1;
+  min-width: 0;
+  max-height: 96px;
+  padding: 9px 11px;
+  border: 1px solid var(--chatbox-border-primary);
+  border-radius: 11px;
+  outline: none;
+  background: var(--chatbox-background-secondary);
+  color: var(--chatbox-tint-primary);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: none;
+  field-sizing: content;
+}
+
+.quick-input:focus {
+  border-color: color-mix(in srgb, var(--quick-accent), transparent 35%);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--quick-accent), transparent 88%);
+}
+
+.quick-input:disabled {
+  opacity: 0.55;
+}
+
+.quick-send {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: var(--quick-accent);
+  color: white;
+  cursor: pointer;
+}
+
+.quick-send:disabled {
+  opacity: 0.35;
+  cursor: default;
+}

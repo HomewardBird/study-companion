@@ -8,6 +8,7 @@ export interface ElectronIPC {
   onTaskCloseRequest: (callback: () => void) => () => void
   onWindowShow: (callback: () => void) => () => void
   onWindowFocused: (callback: () => void) => () => void
+  onQuickModeChanged: (callback: (active: boolean) => void) => () => void
   onUpdateDownloaded: (callback: () => void) => () => void
   addMcpStdioTransportEventListener: <Args extends unknown[]>(
     transportId: string,

@@ -21,16 +21,7 @@ import { difference, intersection, uniq } from 'lodash'
 import oldStore from 'store'
 import { v5 as uuidv5 } from 'uuid'
 import { sessionRepository } from '@/app/renderer-application'
-import {
-  artifactSessionCN,
-  artifactSessionEN,
-  defaultSessionsForCN,
-  defaultSessionsForEN,
-  imageCreatorSessionForCN,
-  imageCreatorSessionForEN,
-  mermaidSessionCN,
-  mermaidSessionEN,
-} from '@/packages/initial_data'
+import { defaultSessionsForCN, defaultSessionsForEN } from '@/packages/initial_data'
 import platform from '@/platform'
 import type { Storage } from '@/platform/interfaces'
 import { getOldVersionStorages } from '@/platform/storages'
@@ -290,20 +281,8 @@ async function migrate_0_to_1(dataStore: MigrateStore) {
   }
 }
 
-async function migrate_1_to_2(dataStore: MigrateStore) {
-  const sessions = await dataStore.getData<Session[]>(StorageKey.ChatSessions, [])
-  const lang = await platform.getLocale()
-  if (lang.startsWith('zh')) {
-    if (sessions.find((session) => session.id === imageCreatorSessionForCN.id)) {
-      return
-    }
-    await dataStore.setData(StorageKey.ChatSessions, [...sessions, imageCreatorSessionForCN])
-  } else {
-    if (sessions.find((session) => session.id === imageCreatorSessionForEN.id)) {
-      return
-    }
-    await dataStore.setData(StorageKey.ChatSessions, [...sessions, imageCreatorSessionForEN])
-  }
+async function migrate_1_to_2(_dataStore: MigrateStore) {
+  // Built-in image-creator example removed in this local build.
 }
 
 async function migrate_2_to_3(dataStore: MigrateStore) {
@@ -326,14 +305,8 @@ async function migrate_2_to_3(dataStore: MigrateStore) {
   }
 }
 
-async function migrate_3_to_4(dataStore: MigrateStore) {
-  const sessions = await dataStore.getData<Session[]>(StorageKey.ChatSessions, [])
-  const lang = await platform.getLocale()
-  const targetSession = lang.startsWith('zh') ? artifactSessionCN : artifactSessionEN
-  if (sessions.find((session) => session.id === targetSession.id)) {
-    return
-  }
-  await dataStore.setData(StorageKey.ChatSessions, [...sessions, targetSession])
+async function migrate_3_to_4(_dataStore: MigrateStore) {
+  // Built-in artifact example removed in this local build.
 }
 
 // 已经迁移到storage migration
@@ -356,14 +329,8 @@ async function migrate_4_to_5(dataStore: MigrateStore): Promise<boolean> {
   return true
 }
 
-async function migrate_5_to_6(dataStore: MigrateStore) {
-  const sessions = await dataStore.getData<Session[]>(StorageKey.ChatSessions, [])
-  const lang = await platform.getLocale()
-  const targetSession = lang.startsWith('zh') ? mermaidSessionCN : mermaidSessionEN
-  if (sessions.find((session) => session.id === targetSession.id)) {
-    return
-  }
-  await dataStore.setData(StorageKey.ChatSessions, [...sessions, targetSession])
+async function migrate_5_to_6(_dataStore: MigrateStore) {
+  // Built-in chart example removed in this local build.
 }
 
 // 针对 mobile 端，从 store 迁移至 sqlite

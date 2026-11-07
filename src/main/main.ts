@@ -295,6 +295,136 @@ let taskCloseProtected = false
 let taskQuitRequested = false
 let tray: Tray | null = null
 
+// --------- 快捷小窗 ---------
+
+const START_HIDDEN = process.argv.includes('--hidden') || process.argv.includes('--silent')
+const QUICK_WINDOW_WIDTH = 620
+const QUICK_WINDOW_HEIGHT = 420
+const QUICK_WINDOW_MIN_WIDTH = 320
+const QUICK_WINDOW_MIN_HEIGHT = 220
+
+let quickMode = false
+let pendingQuickMode = false
+let isAppQuitting = false
+let quickModeBoundsBefore: Electron.Rectangle | null = null
+let quickModeWasMaximized = false
+let quickModeWasFullScreen = false
+
+function sendQuickModeChanged(active: boolean) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('quick-mode-changed', active)
+  }
+}
+
+function getQuickWindowBounds(): Electron.Rectangle {
+  const cursor = screen.getCursorScreenPoint()
+  const display = screen.getDisplayNearestPoint(cursor)
+  const area = display.workArea
+  const width = Math.min(QUICK_WINDOW_WIDTH, area.width - 24)
+  const height = Math.min(QUICK_WINDOW_HEIGHT, area.height - 24)
+  return {
+    width,
+    height,
+    x: Math.round(area.x + (area.width - width) / 2),
+    y: Math.round(area.y + (area.height - height) * 0.36),
+  }
+}
+
+function enterQuickMode() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    pendingQuickMode = true
+    return
+  }
+  if (quickMode) {
+    return
+  }
+
+  quickMode = true
+  quickModeBoundsBefore = mainWindow.getNormalBounds()
+  quickModeWasMaximized = mainWindow.isMaximized()
+  quickModeWasFullScreen = mainWindow.isFullScreen()
+
+  if (quickModeWasFullScreen) {
+    mainWindow.setFullScreen(false)
+  }
+  if (quickModeWasMaximized) {
+    mainWindow.unmaximize()
+  }
+
+  mainWindow.setMinimumSize(QUICK_WINDOW_MIN_WIDTH, QUICK_WINDOW_MIN_HEIGHT)
+  mainWindow.setBounds(getQuickWindowBounds())
+  mainWindow.setAlwaysOnTop(true, 'floating')
+  mainWindow.setSkipTaskbar(true)
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore()
+  }
+  mainWindow.show()
+  mainWindow.focus()
+  sendQuickModeChanged(true)
+  mainWindow.webContents.send('window-show')
+}
+
+function exitQuickMode({ showMain = true }: { showMain?: boolean } = {}) {
+  if (!mainWindow || mainWindow.isDestroyed() || !quickMode) {
+    return
+  }
+
+  quickMode = false
+  mainWindow.setAlwaysOnTop(false)
+  mainWindow.setSkipTaskbar(false)
+  mainWindow.setMinimumSize(windowState.minWidth, windowState.minHeight)
+
+  if (quickModeBoundsBefore) {
+    mainWindow.setBounds(quickModeBoundsBefore)
+  }
+  if (quickModeWasMaximized) {
+    mainWindow.maximize()
+  }
+  if (quickModeWasFullScreen) {
+    mainWindow.setFullScreen(true)
+  }
+  quickModeBoundsBefore = null
+  quickModeWasMaximized = false
+  quickModeWasFullScreen = false
+  sendQuickModeChanged(false)
+
+  if (showMain) {
+    mainWindow.show()
+    mainWindow.focus()
+    mainWindow.webContents.send('window-show')
+  } else {
+    mainWindow.hide()
+  }
+}
+
+function hideQuickWindow() {
+  if (mainWindow && !mainWindow.isDestroyed() && quickMode) {
+    mainWindow.hide()
+  }
+}
+
+async function showQuickWindow() {
+  if (!mainWindow) {
+    pendingQuickMode = true
+    await createWindow()
+    return
+  }
+  if (quickMode) {
+    if (mainWindow.isVisible() && mainWindow.isFocused()) {
+      mainWindow.hide()
+    } else {
+      if (mainWindow.isMinimized()) {
+        mainWindow.restore()
+      }
+      mainWindow.show()
+      mainWindow.focus()
+      mainWindow.webContents.send('window-show')
+    }
+    return
+  }
+  enterQuickMode()
+}
+
 // --------- 快捷键 ---------
 
 /**
@@ -364,7 +494,9 @@ function registerShortcuts(shortcutSetting?: ShortcutSetting) {
   try {
     const quickToggle = normalizeShortcut(shortcutSetting.quickToggle)
     if (isValidShortcut(quickToggle)) {
-      globalShortcut.register(quickToggle, () => showOrHideWindow())
+      globalShortcut.register(quickToggle, () => {
+        void showQuickWindow()
+      })
     }
   } catch (error) {
     log.error('Failed to register shortcut [windowQuickToggle]:', error)
@@ -405,7 +537,7 @@ function createTray() {
       accelerator: 'Command+Q',
     },
   ])
-  tray.setToolTip('Chatbox')
+  tray.setToolTip('学习伴侣')
   tray.setContextMenu(contextMenu)
   tray.on('double-click', showOrHideWindow)
   return tray
@@ -496,6 +628,7 @@ async function createWindow() {
     titleBarStyle: 'hidden',
     // expose window controlls in Windows/Linux
     frame: false,
+    roundedCorners: true,
     trafficLightPosition: { x: 10, y: 13 },
     width: state.width,
     height: state.height,
@@ -505,7 +638,7 @@ async function createWindow() {
     minHeight: windowState.minHeight,
     icon: getAssetPath('icon.png'),
     webPreferences: {
-      spellcheck: true,
+      spellcheck: false,
       webSecurity: false, // 其中一个作用是解决跨域问题
       allowRunningInsecureContent: false,
       preload:
@@ -570,6 +703,10 @@ async function createWindow() {
     if (!mainWindow) {
       throw new Error('"mainWindow" is not defined')
     }
+    // 开机静默启动时只驻留托盘和快捷键，不弹出主界面。
+    if (START_HIDDEN && !quickMode) {
+      return
+    }
     hasShownMainWindow = true
     if (process.env.START_MINIMIZED) {
       mainWindow.minimize()
@@ -588,6 +725,14 @@ async function createWindow() {
   }
 
   mainWindow.once('ready-to-show', showMainWindow)
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    sendQuickModeChanged(quickMode)
+    if (pendingQuickMode) {
+      pendingQuickMode = false
+      enterQuickMode()
+    }
+  })
 
   // Load the local URL for development or the local
   // html file for production
@@ -611,7 +756,12 @@ async function createWindow() {
       mainWindow?.webContents.send('task-operation:close-requested')
       return
     }
-    if (mainWindow) {
+    if (quickMode && !isAppQuitting) {
+      event.preventDefault()
+      hideQuickWindow()
+      return
+    }
+    if (mainWindow && !quickMode) {
       windowState.saveState(mainWindow)
     }
   })
@@ -633,6 +783,16 @@ async function createWindow() {
 
   mainWindow.on('focus', () => {
     mainWindow?.webContents.send('window:focused')
+  })
+
+  mainWindow.on('blur', () => {
+    if (!quickMode || isAppQuitting) {
+      return
+    }
+    if (mainWindow?.webContents.isDevToolsOpened()) {
+      return
+    }
+    hideQuickWindow()
   })
 
   const menuBuilder = new MenuBuilder(mainWindow)
@@ -670,6 +830,10 @@ async function createWindow() {
 async function showOrHideWindow() {
   if (!mainWindow) {
     await createWindow()
+    return
+  }
+  if (quickMode) {
+    exitQuickMode({ showMain: true })
     return
   }
   if (mainWindow.isMinimized()) {
@@ -716,6 +880,9 @@ if (quitForInstallRequested) {
 
     if (url) {
       // Deep Link 场景：总是显示并聚焦窗口
+      if (quickMode) {
+        exitQuickMode({ showMain: true })
+      }
       if (!mainWindow) {
         // 窗口未创建，立即创建
         await createWindow()
@@ -754,13 +921,19 @@ if (quitForInstallRequested) {
   app
     .whenReady()
     .then(async () => {
+      session.defaultSession.setSpellCheckerEnabled(false)
       await knowledgeBaseInitPromise
       await createWindow()
       startupWindowCreated = true
       await initializeSessionAttachmentRagAfterAppReady()
+      if (app.isPackaged) {
+        void autoLauncher.sync().catch((error) => {
+          log.error('autoLaunch: failed to sync', error)
+        })
+      }
       ensureTray()
       // HarmonyOS HAP updates are distributed outside electron-updater.
-      if (MAIN_RUNTIME_POLICY.startAppUpdater) {
+      if (MAIN_RUNTIME_POLICY.startAppUpdater && process.env.CHATBOX_ENABLE_UPDATER === '1') {
         new AppUpdater(() => mainWindow)
       }
 
@@ -785,6 +958,10 @@ if (quitForInstallRequested) {
       app.on('activate', () => {
         // On macOS it's common to re-create a window in the app when the
         // dock icon is clicked and there are no other windows open.
+        if (quickMode) {
+          exitQuickMode({ showMain: true })
+          return
+        }
         if (mainWindow === null) {
           createWindow()
         }
@@ -798,7 +975,7 @@ if (quitForInstallRequested) {
       // prevent loss of window-state data when OS is restarted without properly
       // shutting down the application (https://github.com/microsoft/vscode/issues/87171)
       app.on('browser-window-blur', () => {
-        if (mainWindow) {
+        if (mainWindow && !quickMode) {
           windowState.saveState(mainWindow)
         }
       })
@@ -814,6 +991,7 @@ if (quitForInstallRequested) {
         destroyTray()
       })
       app.on('before-quit', (event) => {
+        isAppQuitting = true
         if (taskCloseProtected) {
           event.preventDefault()
           taskQuitRequested = true
@@ -1234,7 +1412,27 @@ ipcMain.handle('window:close', () => {
     mainWindow?.webContents.send('task-operation:close-requested')
     return
   }
+  if (quickMode) {
+    hideQuickWindow()
+    return
+  }
   closeMainWindow()
+})
+
+ipcMain.handle('quick:hide', () => {
+  hideQuickWindow()
+})
+
+ipcMain.handle('quick:expand', (_event, sessionId: unknown) => {
+  exitQuickMode({ showMain: true })
+  if (typeof sessionId === 'string' && /^[a-zA-Z0-9_-]+$/.test(sessionId)) {
+    mainWindow?.webContents.send('navigate-to', `/session/${sessionId}`)
+  }
+})
+
+ipcMain.handle('quick:open-settings', () => {
+  exitQuickMode({ showMain: true })
+  mainWindow?.webContents.send('navigate-to', '/settings/provider')
 })
 
 ipcMain.handle('task-operation:set-active', (event, active: unknown) => {
