@@ -4,6 +4,10 @@ Windows 11 上的本地优先学习助手：按 `Ctrl+Alt+Space` 呼出极简小
 
 本项目基于 [Chatbox Community Edition](https://github.com/chatboxai/chatbox) 改造，遵循 GPL-3.0。它不是 Chatbox 官方产品，也不包含 Chatbox 账号、会员或云端额度。
 
+## 下载
+
+从 [Releases](https://github.com/HomewardBird/study-companion/releases/latest) 下载 Windows x64 安装包。当前版本需要自备 API Key。
+
 ![快捷小窗](docs/screenshots/quick-window.png)
 
 ![主界面](docs/screenshots/main-window.png)
