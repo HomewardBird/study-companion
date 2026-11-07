@@ -69,9 +69,23 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/chatboxai/chatbox.git"
+    "url": "https://github.com/HomewardBird/study-companion.git"
   },
-  "keywords": [],
+  "homepage": "https://github.com/HomewardBird/study-companion#readme",
+  "bugs": {
+    "url": "https://github.com/HomewardBird/study-companion/issues"
+  },
+  "keywords": [
+    "electron",
+    "study",
+    "education",
+    "tutor",
+    "chatbox",
+    "windows",
+    "markdown",
+    "socratic",
+    "local-first"
+  ],
   "author": {
     "name": "bennhuang",
     "email": "tohuangbin@gmail.com"
