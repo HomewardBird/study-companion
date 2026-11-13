@@ -1,10 +1,12 @@
-import { IconArrowsMaximize, IconArrowUp, IconMinus, IconSettings, IconWorldWww } from '@tabler/icons-react'
 import { createMessage, type Message, type MessageToolCallPart } from '@shared/types'
+import { IconArrowsMaximize, IconArrowUp, IconMinus, IconSettings, IconWorldWww } from '@tabler/icons-react'
 import { useEffect, useRef, useState } from 'react'
 import { rendererApplication } from '@/app/renderer-application'
 import Markdown from '@/components/Markdown'
 import { useSessionTranscript } from '@/hooks/useSessionPresentation'
+import { QUICK_STUDY_PROMPT, STUDY_PROMPT_MARKER } from '@/packages/initial_data'
 import { getWebSearchConfigurationIssue } from '@/packages/web-search/configuration-issue'
+import { LEGACY_DEFAULT_SYSTEM_PROMPTS } from '@/setup/legacy_prompts'
 import { lastUsedModelStore, useLastUsedModelStore } from '@/stores/lastUsedModelStore'
 import { submitNewUserMessage } from '@/stores/session/messages'
 import { useSessionActivity } from '@/stores/sessionActivityStore'
@@ -14,7 +16,6 @@ import { getMessageText } from '@/utils/message'
 
 const QUICK_SESSION_KEY = 'study-quick-session-id'
 const QUICK_WEB_KEY = 'study-quick-web-enabled'
-const SEARCH_CONTEXT_ENTRY = /\n(\d+)\.\s+(.+)\n(https?:\/\/\S+)\n([^\n]*)/g
 
 type QuickSource = { title: string; url: string }
 let quickSessionPromise: Promise<string> | null = null
@@ -100,18 +101,34 @@ function collectSources(messages: Message[]): QuickSource[] {
 
 async function createQuickSession() {
   const model = getDefaultModel()
-  const prompt = settingsStore.getState().defaultPrompt || ''
   const session = await rendererApplication.sessions.createSession(
     {
       name: '快问',
       type: 'chat',
-      messages: prompt ? [createMessage('system', prompt)] : [],
+      messages: [createMessage('system', QUICK_STUDY_PROMPT)],
       settings: model ? { ...model } : {},
     },
     undefined
   )
   storeQuickSessionId(session.id)
   return session.id
+}
+
+async function syncQuickSessionPrompt(sessionId: string) {
+  const page = await rendererApplication.sessions.readSessionTranscriptWindow({
+    sessionId,
+    limit: 4,
+    origin: 'head',
+  })
+  if (!page) return
+
+  const systemRow = page.messages.find(({ message }) => message.role === 'system')
+  if (!systemRow) return
+  const currentPrompt = getMessageText(systemRow.message, false, false)
+  if (currentPrompt.includes(STUDY_PROMPT_MARKER)) return
+  if (!LEGACY_DEFAULT_SYSTEM_PROMPTS.includes(currentPrompt)) return
+
+  await rendererApplication.sessions.setSessionSystemPrompt(sessionId, QUICK_STUDY_PROMPT)
 }
 
 async function ensureQuickSession() {
@@ -128,6 +145,7 @@ async function ensureQuickSession() {
     if (existingId) {
       const existing = await rendererApplication.sessions.getSessionHeader(existingId).catch(() => null)
       if (existing) {
+        await syncQuickSessionPrompt(existingId).catch(() => undefined)
         return existingId
       }
     }

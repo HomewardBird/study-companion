@@ -1,3 +1,4 @@
+import { DEFAULT_SYSTEM_PROMPT } from '@chatbox/core/domain/settings'
 import { describe, expect, it } from 'vitest'
 import { chatSessionSettings, getDefaultPrompt, newConfigs, pictureSessionSettings, settings } from './defaults'
 import { DEFAULT_INTERFACE_COLORS } from './theme-colors'
@@ -10,14 +11,14 @@ describe('defaults', () => {
     const result: Settings = settings()
 
     expect(result.theme).toBe(Theme.System)
-    expect(result.language).toBe('en')
+    expect(result.language).toBe('zh-Hans')
     expect(result.fontSize).toBe(14)
     expect(result.spellCheck).toBe(true)
     expect(result.interfaceColors).toEqual(DEFAULT_INTERFACE_COLORS)
     expect(result.interfaceColorPresets).toEqual([])
     expect(result.showWordCount).toBe(false)
     expect(result.showTokenCount).toBe(false)
-    expect(result.showTokenUsed).toBe(true)
+    expect(result.showTokenUsed).toBe(false)
     expect(result.messageLayout).toBe('bubble')
   })
 
@@ -109,8 +110,8 @@ describe('defaults', () => {
     expect(result.uuid).toMatch(UUID_REGEX)
   })
 
-  it('getDefaultPrompt() returns expected string', () => {
-    expect(getDefaultPrompt()).toBe('You are a helpful assistant.')
+  it('getDefaultPrompt() returns the study default prompt', () => {
+    expect(getDefaultPrompt()).toBe(DEFAULT_SYSTEM_PROMPT)
   })
 
   it('chatSessionSettings() returns provider and modelId', () => {
